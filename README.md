@@ -35,4 +35,5 @@ Run a single command across all your VMs concurrently. Great for quick checks li
 ```
 
 ## More Info
-See [TAILSCALE_CLUSTER_GUIDE.md](TAILSCALE_CLUSTER_GUIDE.md) for deeper operational strategies (like using Ansible, Docker Swarm, or K3s over Tailscale).
+* See [TAILSCALE_CLUSTER_GUIDE.md](TAILSCALE_CLUSTER_GUIDE.md) for deeper operational strategies (like using Ansible, Docker Swarm, or K3s over Tailscale).
+* See [TS_CONNECT_DESIGN.md](TS_CONNECT_DESIGN.md) for the architectural decisions and security considerations behind the `ts-connect.sh` tool.
