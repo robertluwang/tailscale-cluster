@@ -82,6 +82,21 @@ K3s is a certified Kubernetes distribution designed for IoT and Edge computing. 
 * For a small cluster, looping and sending `ssh ... &` to the background, followed by a `wait` loop on the PIDs, provides instant parallel execution without needing heavy tools like Ansible or pdsh.
 * `-n` flag is explicitly used to prevent SSH from reading from stdin, which would break the parallel loop.
 
+### 5.3 `ts-sync` (Data Distribution)
+**Decision:** Wrapped `rsync` over SSH.
+**Rationale:**
+* When developing or deploying configurations, pulling code via Git on every 1GB node is often overkill and wastes disk space. `rsync` allows the control node to push exact state instantly.
+
+### 5.4 `ts-status` (Health Dashboard)
+**Decision:** Parallel ICMP ping followed by an SSH `uptime` check, writing to temporary files to maintain ordering.
+**Rationale:**
+* Quickly identifies if a node is offline (Tailscale down) vs. just having SSH broken/frozen (Tailscale up, SSH down). Output is column-aligned for readability.
+
+### 5.5 `ts-tmux` (Interactive Multiplexing)
+**Decision:** Automated layout generation using `tmux split-window` and `synchronize-panes`.
+**Rationale:**
+* Fulfills the "Future Extensibility Idea" of synchronized interactive sessions. While `ts-cluster-run` is great for fire-and-forget automation, sometimes an administrator needs to interactively tail logs or navigate file systems on all nodes simultaneously. `tmux` provides this visually without requiring heavy software like Ansible.
+
 ## 6. Security & Connection Handling
 
 ### 6.1 SSH Key Enforcement
@@ -92,6 +107,14 @@ The tools default the expected SSH key path to `~/.ssh/my-cluster-key.pem` but a
 **Solution:** The scripts inject `-o StrictHostKeyChecking=accept-new`.
 * **Why not `no`?** Setting it to `no` is a security risk. `accept-new` is a secure compromise: it automatically accepts the key *only* if the host is not in `known_hosts`. If the host key changes later (indicating a VM rebuild or MITM), it safely blocks the connection.
 
-## 7. Future Extensibility Ideas
+## 7. Known Limitations
+
+### 7.1 iSH App (iOS) Limitations
+When integrating an iPhone or iPad running the `iSH` app into the Tailscale cluster:
+* **NFS Client Support:** iSH lacks native kernel support for NFS or FUSE. It is impossible to run `mount -t nfs` inside iSH.
+* **SSH/SFTP Hanging:** Running `ssh` or `sftp` into iSH from a cluster VM may hang due to limitations in how iSH handles background processes, network socket inheritance, and the emulated `sshd`. Wait loops or large file transfers over `sftp` into iSH can freeze the application.
+* **Workaround:** If you need to transfer files to iSH over the Tailscale network, it is often more reliable to initiate the connection *from* iSH to a stable Linux VM (using `scp` or `sftp`), or map a network share through the native iOS "Files" app and mount it using the `mount -t ios` command.
+
+## 8. Future Extensibility Ideas
 1. **Dynamic Tailscale Parsing:** Instead of a static `.env` list, the scripts could run `tailscale status --json` (using `jq` to parse) to dynamically build the VM inventory in real-time.
-2. **Tmux Integration:** Add an option to open SSH sessions to *all* VMs simultaneously in a synchronized Tmux pane setup.
+2. **Log Aggregation:** A `ts-logs.sh` tool that tails `syslog` or `journalctl` from all nodes concurrently and prefixes the output with the node name in real-time.
