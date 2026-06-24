@@ -28,11 +28,23 @@ An interactive prompt to quickly SSH or SFTP into any node in your cluster.
 ```
 
 ### 2. `ts-cluster-run.sh`
-Run a single command across all your VMs concurrently. Great for quick checks like `df -h` or `sudo apt update`.
+Run a single command across all or specific nodes concurrently. Great for quick checks like `df -h` or `sudo apt update`.
 
 ```bash
+# Run on all nodes
 ./ts-cluster-run.sh "uptime"
+
+# Run on specific nodes
+./ts-cluster-run.sh --nodes "node1,node3" "df -h /"
+
+# Run on all nodes (explicit)
+./ts-cluster-run.sh --nodes "all" "sudo apt update"
 ```
+
+Features:
+- `--nodes "node1,node2"` - Target specific nodes (comma-separated)
+- Exit code tracking with color-coded summary report
+- `--no-summary` - Skip the summary output
 
 ### 3. `ts-setup-share.sh`
 Interactive tool to set up an NFS shared folder across the cluster. It prompts you to select a server node, installs the necessary NFS packages, configures the share, and mounts it automatically on all remaining client nodes.
@@ -59,7 +71,29 @@ A quick visual dashboard that pings all nodes and fetches their uptime and syste
 ./ts-status.sh
 ```
 
-### 6. `ts-tmux.sh`
+### 6. `ts-dispatch.sh`
+Run different commands on different nodes using a task file. Perfect for node-specific operations.
+
+```bash
+# Create a task file
+cat > tasks.txt << 'EOF'
+# Comments start with #
+# Format: node_name: command
+node1: sudo apt update
+node2: sudo reboot
+all: df -h /
+EOF
+
+# Dispatch tasks
+./ts-dispatch.sh tasks.txt
+```
+
+Features:
+- Run different commands on different nodes in one go
+- `all:` keyword to target all nodes
+- Exit code tracking with color-coded summary report
+
+### 7. `ts-tmux.sh`
 Launches a synchronized `tmux` session with split panes for every node in your cluster. Typing in one terminal pane will instantly type the exact same command across all other panes simultaneously. Excellent for real-time interactive debugging across the cluster.
 
 ```bash
